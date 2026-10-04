@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FinControl - Финансовый Трекер</title>
+    
+    <!-- PWA Manifest & Meta tags -->
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22FinControl%20Tracker%22%2C%22short_name%22%3A%22FinControl%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%234f46e5%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fplacehold.co%2F192x192%2F4f46e5%2Fffffff%3Ftext%3DFC%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fplacehold.co%2F512x512%2F4f46e5%2Fffffff%3Ftext%3DFC%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FinControl">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',
+                        darkBg: '#0f172a',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 h-full flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+    <header class="bg-slate-800/80 backdrop-blur border-b border-slate-700 sticky top-0 z-30 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-wallet"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight tracking-tight">FinControl</h1>
+                <p class="text-xs text-slate-400">Офлайн Финансовый Трекер</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="openInstallGuide()" id="installBtn" class="hidden bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-2 rounded-lg font-medium transition shadow-sm flex items-center space-x-1.5">
+                <i class="fa-solid fa-download"></i>
+                <span>Установить PWA</span>
+            </button>
+            <button onclick="clearAllData()" class="text-slate-400 hover:text-rose-400 p-2 rounded-lg transition" title="Сбросить данные">
+                <i class="fa-solid fa-trash-can text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-4 max-w-md w-full mx-auto pb-28">
+        
+        <!-- Tab 1: Operations / Dashboard -->
+        <div id="tab-operations" class="tab-content active space-y-6">
+            <!-- Balance Summary Card -->
+            <div class="bg-gradient-to-br from-indigo-900/80 to-slate-800 border border-indigo-500/30 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                <p class="text-xs font-medium text-indigo-300 uppercase tracking-wider mb-1">Общий баланс</p>
+                <h2 id="totalBalance" class="text-3xl font-extrabold tracking-tight mb-4">0.00 ₽</h2>
+                
+                <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-700/60">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-arrow-down"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase tracking-wider">Доходы</p>
+                            <p id="totalIncome" class="text-sm font-bold text-emerald-400">+0.00 ₽</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-arrow-up"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase tracking-wider">Расходы</p>
+                            <p id="totalExpense" class="text-sm font-bold text-rose-400">-0.00 ₽</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Transaction Form -->
+            <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-md">
+                <h3 class="text-sm font-bold text-slate-200 mb-3 flex items-center space-x-2">
+                    <i class="fa-solid fa-plus-circle text-indigo-400"></i>
+                    <span>Новая операция</span>
+                </h3>
+                
+                <form id="transactionForm" onsubmit="addTransaction(event)" class="space-y-3">
+                    <div class="flex rounded-lg bg-slate-900 p-1 border border-slate-700">
+                        <button type="button" id="typeExpense" onclick="setTxType('expense')" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-rose-600 text-white transition shadow">Расход</button>
+                        <button type="button" id="typeIncome" onclick="setTxType('income')" class="flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-400 transition">Доход</button>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1">Сумма (₽)</label>
+                        <input type="number" step="0.01" id="txAmount" required placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1">Категория</label>
+                            <select id="txCategory" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1">Дата</label>
+                            <input type="date" id="txDate" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1">Комментарий</label>
+                        <input type="text" id="txNote" placeholder="Например: Продукты в супермаркете" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 transition">
+                        Добавить транзакцию
+                    </button>
+                </form>
+            </div>
+
+            <!-- Transactions History -->
+            <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-md">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-bold text-slate-200 flex items-center space-x-2">
+                        <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
+                        <span>История операций</span>
+                    </h3>
+                    <span id="txCount" class="text-xs text-slate-400 bg-slate-700/50 px-2 py-0.5 rounded-full">0</span>
+                </div>
+
+                <div id="txList" class="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                    <!-- Transactions injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Savings Goals -->
+        <div id="tab-savings" class="tab-content space-y-6">
+            <div class="bg-gradient-to-br from-purple-900/80 to-slate-800 border border-purple-500/30 rounded-2xl p-5 shadow-xl">
+                <h3 class="text-base font-bold text-slate-100 mb-1 flex items-center space-x-2">
+                    <i class="fa-solid fa-bullseye text-purple-400"></i>
+                    <span>Финансовые цели</span>
+                </h3>
+                <p class="text-xs text-slate-300">Накапливайте на важные покупки, отпуск или подушку безопасности.</p>
+            </div>
+
+            <!-- Add Goal Form -->
+            <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-md">
+                <h4 class="text-sm font-bold text-slate-200 mb-3 flex items-center space-x-2">
+                    <i class="fa-solid fa-plus text-purple-400"></i>
+                    <span>Создать новую цель</span>
+                </h4>
+                <form id="goalForm" onsubmit="addGoal(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1">Название цели</label>
+                        <input type="text" id="goalTitle" required placeholder="Например: Новый ноутбук" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1">Целевая сумма (₽)</label>
+                            <input type="number" step="0.01" id="goalTarget" required placeholder="50000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1">Уже накоплено (₽)</label>
+                            <input type="number" step="0.01" id="goalCurrent" placeholder="0" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1">Срок достижения (дата)</label>
+                        <input type="date" id="goalDeadline" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition">
+                    </div>
+                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2.5 rounded-xl shadow-lg shadow-purple-600/30 transition">
+                        Добавить цель
+                    </button>
+                </form>
+            </div>
+
+            <!-- Goals List -->
+            <div class="space-y-4" id="goalsList">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Tab 3: Analytics -->
+        <div id="tab-analytics" class="tab-content space-y-6">
+            <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-md space-y-3">
+                <h3 class="text-sm font-bold text-slate-200 flex items-center space-x-2">
+                    <i class="fa-solid fa-chart-pie text-indigo-400"></i>
+                    <span>Структура расходов</span>
+                </h3>
+                <div class="w-full h-64 flex items-center justify-center relative">
+                    <canvas id="expenseChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-md space-y-3">
+                <h3 class="text-sm font-bold text-slate-200 flex items-center space-x-2">
+                    <i class="fa-solid fa-chart-line text-indigo-400"></i>
+                    <span>Динамика доходов и расходов</span>
+                </h3>
+                <div class="w-full h-60 flex items-center justify-center relative">
+                    <canvas id="dynamicsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Analytics Summary Stats -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-3.5 shadow-sm">
+                    <p class="text-[11px] text-slate-400 uppercase tracking-wider mb-1">Средний расход в день</p>
+                    <p id="statAvgDaily" class="text-base font-bold text-slate-200">0.00 ₽</p>
+                </div>
+                <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-3.5 shadow-sm">
+                    <p class="text-[11px] text-slate-400 uppercase tracking-wider mb-1">Топ категория</p>
+                    <p id="statTopCategory" class="text-base font-bold text-indigo-400 truncate">Нет данных</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-slate-800/95 backdrop-blur border-t border-slate-700 z-30 max-w-md mx-auto flex justify-around py-2 px-3">
+        <button onclick="switchTab('operations')" id="nav-operations" class="flex flex-col items-center space-y-1 text-indigo-400 transition p-2">
+            <i class="fa-solid fa-wallet text-lg"></i>
+            <span class="text-[10px] font-medium">Операции</span>
+        </button>
+        <button onclick="switchTab('savings')" id="nav-savings" class="flex flex-col items-center space-y-1 text-slate-400 hover:text-slate-200 transition p-2">
+            <i class="fa-solid fa-bullseye text-lg"></i>
+            <span class="text-[10px] font-medium">Накопления</span>
+        </button>
+        <button onclick="switchTab('analytics')" id="nav-analytics" class="flex flex-col items-center space-y-1 text-slate-400 hover:text-slate-200 transition p-2">
+            <i class="fa-solid fa-chart-pie text-lg"></i>
+            <span class="text-[10px] font-medium">Аналитика</span>
+        </button>
+    </nav>
+
+    <!-- Goal Deposit / Withdraw Modal -->
+    <div id="goalModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 max-w-xs w-full shadow-2xl">
+            <h3 id="goalModalTitle" class="text-sm font-bold text-slate-100 mb-3">Пополнить цель</h3>
+            <form onsubmit="submitGoalOperation(event)" class="space-y-3">
+                <input type="hidden" id="modalGoalId">
+                <input type="hidden" id="modalGoalAction">
+                <div>
+                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Сумма (₽)</label>
+                    <input type="number" step="0.01" id="modalAmount" required placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition">
+                </div>
+                <div class="flex space-x-2 pt-1">
+                    <button type="button" onclick="closeGoalModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-semibold py-2.5 rounded-xl transition">Отмена</button>
+                    <button type="submit" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold py-2.5 rounded-xl transition">Подтвердить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- PWA Install Guide Modal -->
+    <div id="installModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-t-3xl sm:rounded-2xl p-5 max-w-md w-full shadow-2xl animate-in fade-in slide-in-from-bottom duration-200">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-100 flex items-center space-x-2">
+                    <i class="fa-solid fa-mobile-screen-button text-indigo-400"></i>
+                    <span>Установка FinControl PWA</span>
+                </h3>
+                <button onclick="closeInstallGuide()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-sm text-slate-300">
+                <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/60">
+                    <p class="font-semibold text-indigo-400 mb-1 flex items-center space-x-2">
+                        <i class="fa-brands fa-android"></i>
+                        <span>Android (Chrome / Яндекс)</span>
+                    </p>
+                    <ol class="list-decimal list-inside space-y-1 text-xs text-slate-400 pl-1">
+                        <li>Нажмите на меню браузера (<i class="fa-solid fa-ellipsis-vertical"></i> в правом верхнем углу).</li>
+                        <li>Выберите пункт <b class="text-slate-200">«Установить приложение»</b> или <b class="text-slate-200">«Добавить на главный экран»</b>.</li>
+                        <li>Подтвердите установку. Приложение появится на рабочем столе вашего смартфона.</li>
+                    </ol>
+                </div>
+
+                <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/60">
+                    <p class="font-semibold text-indigo-400 mb-1 flex items-center space-x-2">
+                        <i class="fa-brands fa-apple"></i>
+                        <span>iOS (Safari на iPhone / iPad)</span>
+                    </p>
+                    <ol class="list-decimal list-inside space-y-1 text-xs text-slate-400 pl-1">
+                        <li>Откройте эту страницу в браузере <b class="text-slate-200">Safari</b>.</li>
+                        <li>Нажмите на кнопку <b class="text-slate-200">«Поделиться»</b> (<i class="fa-solid fa-arrow-up-from-bracket"></i> внизу экрана).</li>
+                        <li>Прокрутите вниз и выберите <b class="text-slate-200">«На экран "Домой"»</b> (<i class="fa-solid fa-square-plus"></i>).</li>
+                        <li>Нажмите <b class="text-slate-200">«Добавить»</b> в правом верхнем углу.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <button onclick="closeInstallGuide()" class="w-full mt-5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold py-2.5 rounded-xl transition">
+                Понятно
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Categories definition
+        const categories = {
+            expense: [
+                { id: 'food', name: 'Продукты и Еда', icon: 'fa-utensils', color: '#f43f5e' },
+                { id: 'transport', name: 'Транспорт', icon: 'fa-car', color: '#3b82f6' },
+                { id: 'housing', name: 'ЖКХ и Дом', icon: 'fa-house', color: '#8b5cf6' },
+                { id: 'entertainment', name: 'Развлечения', icon: 'fa-film', color: '#ec4899' },
+                { id: 'other_exp', name: 'Прочие расходы', icon: 'fa-receipt', color: '#64748b' }
+            ],
+            income: [
+                { id: 'salary', name: 'Зарплата', icon: 'fa-briefcase', color: '#10b981' },
+                { id: 'freelance', name: 'Фриланс / Подработка', icon: 'fa-laptop-code', color: '#06b6d4' },
+                { id: 'investment', name: 'Инвестиции', icon: 'fa-chart-line', color: '#14b8a6' },
+                { id: 'other_inc', name: 'Прочие доходы', icon: 'fa-wallet', color: '#34d399' }
+            ]
+        };
+
+        let currentType = 'expense';
+        let currentActiveTab = 'operations';
+        
+        let transactions = JSON.parse(localStorage.getItem('fincontrol_txs')) || [
+            { id: 1, type: 'income', amount: 85000, category: 'salary', date: new Date().toISOString().split('T')[0], note: 'Зарплата' },
+            { id: 2, type: 'expense', amount: 4300, category: 'food', date: new Date().toISOString().split('T')[0], note: 'Супермаркет' },
+            { id: 3, type: 'expense', amount: 1500, category: 'transport', date: new Date(Date.now() - 86400000).toISOString().split('T')[0], note: 'Проездной' }
+        ];
+
+        let goals = JSON.parse(localStorage.getItem('fincontrol_goals')) || [
+            { id: 1, title: 'Финансовая подушка', target: 150000, current: 45000, deadline: '2026-12-31' },
+            { id: 2, title: 'Новый ноутбук', target: 90000, current: 32000, deadline: '2026-08-15' }
+        ];
+
+        let expenseChartInstance = null;
+        let dynamicsChartInstance = null;
+
+        // Initialize UI on load
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('txDate').valueAsDate = new Date();
+            // Default goal deadline 3 months ahead
+            let defaultDeadline = new Date();
+            defaultDeadline.setMonth(defaultDeadline.getMonth() + 3);
+            document.getElementById('goalDeadline').value = defaultDeadline.toISOString().split('T')[0];
+
+            updateCategorySelect();
+            renderApp();
+            registerServiceWorker();
+        });
+
+        // Tab Navigation
+        function switchTab(tabId) {
+            currentActiveTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            ['operations', 'savings', 'analytics'].forEach(t => {
+                const navBtn = document.getElementById(`nav-${t}`);
+                if (t === tabId) {
+                    navBtn.className = "flex flex-col items-center space-y-1 text-indigo-400 transition p-2";
+                } else {
+                    navBtn.className = "flex flex-col items-center space-y-1 text-slate-400 hover:text-slate-200 transition p-2";
+                }
+            });
+
+            if (tabId === 'analytics') {
+                setTimeout(renderCharts, 50);
+            }
+        }
+
+        // Service Worker for offline PWA
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    const CACHE_NAME = 'fincontrol-v2';
+                    const ASSETS = [location.href];
+                    self.addEventListener('install', (e) => {
+                        e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('activate', (e) => {
+                        e.waitUntil(clients.claim());
+                    });
+                    self.addEventListener('fetch', (e) => {
+                        e.respondWith(
+                            caches.match(e.request).then(response => response || fetch(e.request).catch(() => caches.match(location.href)))
+                        );
+                    });
+                `;
+                const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(swBlob);
+                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error:', err));
+            }
+        }
+
+        function setType(type) {
+            currentType = type;
+            const expBtn = document.getElementById('typeExpense');
+            const incBtn = document.getElementById('typeIncome');
+            if (type === 'expense') {
+                expBtn.className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-rose-600 text-white transition shadow";
+                incBtn.className = "flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-400 transition";
+            } else {
+                incBtn.className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-emerald-600 text-white transition shadow";
+                expBtn.className = "flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-400 transition";
+            }
+            updateCategorySelect();
+        }
+
+        function setTxType(type) { setType(type); }
+
+        function updateCategorySelect() {
+            const select = document.getElementById('txCategory');
+            select.innerHTML = '';
+            categories[currentType].forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.name;
+                select.appendChild(option);
+            });
+        }
+
+        // Transaction CRUD
+        function addTransaction(e) {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('txAmount').value);
+            const category = document.getElementById('txCategory').value;
+            const date = document.getElementById('txDate').value;
+            const note = document.getElementById('txNote').value.trim() || (currentType === 'expense' ? 'Расход' : 'Доход');
+
+            if (!amount || amount <= 0) return;
+
+            transactions.unshift({
+                id: Date.now(),
+                type: currentType,
+                amount,
+                category,
+                date,
+                note
+            });
+
+            saveData();
+            renderApp();
+            
+            document.getElementById('transactionForm').reset();
+            document.getElementById('txDate').valueAsDate = new Date();
+            setType('expense');
+        }
+
+        function deleteTransaction(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            saveData();
+            renderApp();
+        }
+
+        // Goals CRUD & Operations
+        function addGoal(e) {
+            e.preventDefault();
+            const title = document.getElementById('goalTitle').value.trim();
+            const target = parseFloat(document.getElementById('goalTarget').value);
+            const current = parseFloat(document.getElementById('goalCurrent').value) || 0;
+            const deadline = document.getElementById('goalDeadline').value;
+
+            if (!title || !target || target <= 0) return;
+
+            goals.push({
+                id: Date.now(),
+                title,
+                target,
+                current,
+                deadline
+            });
+
+            saveData();
+            renderGoals();
+            document.getElementById('goalForm').reset();
+            let defaultDeadline = new Date();
+            defaultDeadline.setMonth(defaultDeadline.getMonth() + 3);
+            document.getElementById('goalDeadline').value = defaultDeadline.toISOString().split('T')[0];
+        }
+
+        function deleteGoal(id) {
+            goals = goals.filter(g => g.id !== id);
+            saveData();
+            renderGoals();
+        }
+
+        function openGoalModal(id, action) {
+            document.getElementById('modalGoalId').value = id;
+            document.getElementById('modalGoalAction').value = action;
+            document.getElementById('goalModalTitle').textContent = action === 'deposit' ? 'Пополнить цель' : 'Снять средства';
+            document.getElementById('modalAmount').value = '';
+            document.getElementById('goalModal.id')?.focus();
+            document.getElementById('goalModal').classList.remove('hidden');
+        }
+
+        function closeGoalModal() {
+            document.getElementById('goalModal').classList.add('hidden');
+        }
+
+        function submitGoalOperation(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('modalGoalId').value);
+            const action = document.getElementById('modalGoalAction').value;
+            const amount = parseFloat(document.getElementById('modalAmount').value);
+
+            if (!amount || amount <= 0) return;
+
+            goals = goals.map(g => {
+                if (g.id === id) {
+                    if (action === 'deposit') g.current += amount;
+                    else g.current = Math.max(0, g.current - amount);
+                }
+                return g;
+            });
+
+            saveData();
+            renderGoals();
+            closeGoalModal();
+        }
+
+        function clearAllData() {
+            if (confirm('Сбросить все операции и накопления?')) {
+                transactions = [];
+                goals = [];
+                saveData();
+                renderApp();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('fincontrol_txs', JSON.stringify(transactions));
+            localStorage.setItem('fincontrol_goals', JSON.stringify(goals));
+        }
+
+        function renderApp() {
+            renderDashboard();
+            renderTransactions();
+            renderGoals();
+            if (currentActiveTab === 'analytics') {
+                renderCharts();
+            }
+        }
+
+        function renderDashboard() {
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            transactions.forEach(t => {
+                if (t.type === 'income') totalIncome += t.amount;
+                else totalExpense += t.amount;
+            });
+
+            const totalBalance = totalIncome - totalExpense;
+
+            document.getElementById('totalBalance').textContent = totalBalance.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' });
+            document.getElementById('totalIncome').textContent = '+' + totalIncome.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' });
+            document.getElementById('totalExpense').textContent = '-' + totalExpense.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' });
+            document.getElementById('txCount').textContent = transactions.length;
+        }
+
+        function renderTransactions() {
+            const txListEl = document.getElementById('txList');
+            if (transactions.length === 0) {
+                txListEl.innerHTML = `
+                    <div class="text-center py-8 text-slate-500">
+                        <i class="fa-solid fa-receipt text-3xl mb-2 opacity-40"></i>
+                        <p class="text-xs">Операций пока нет</p>
+                    </div>
+                `;
+                return;
+            }
+
+            txListEl.innerHTML = '';
+            transactions.forEach(t => {
+                const catList = [...categories.expense, ...categories.income];
+                const catObj = catList.find(c => c.id === t.category) || { name: 'Прочее', icon: 'fa-circle-dot' };
+                
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-700/50 hover:border-slate-600 transition";
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-xl ${t.type === 'income' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'} flex items-center justify-center text-xs">
+                            <i class="fa-solid ${catObj.icon}"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-slate-200">${escapeHtml(t.note)}</p>
+                            <p class="text-[10px] text-slate-400">${catObj.name} • ${t.date}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xs font-bold ${t.type === 'income' ? 'text-emerald-400' : 'text-slate-200'}">
+                            ${t.type === 'income' ? '+' : '-'}${t.amount.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' })}
+                        </span>
+                        <button onclick="deleteTransaction(${t.id})" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Удалить">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                txListEl.appendChild(item);
+            });
+        }
+
+        function renderGoals() {
+            const listEl = document.getElementById('goalsList');
+            if (goals.length === 0) {
+                listEl.innerHTML = `
+                    <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-6 text-center text-slate-500">
+                        <i class="fa-solid fa-bullseye text-3xl mb-2 opacity-40"></i>
+                        <p class="text-xs">У вас пока нет активных целей</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = '';
+            goals.forEach(g => {
+                const percent = Math.min(100, Math.round((g.current / g.target) * 100));
+                const remaining = Math.max(0, g.target - g.current);
+                
+                // Days remaining calculation
+                const deadlineDate = new Date(g.deadline);
+                const today = new Date();
+                const diffDays = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
+                const daysText = diffDays > 0 ? `Осталось ~${diffDays} дн.` : 'Срок истёк';
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-md space-y-3";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-100">${escapeHtml(g.title)}</h4>
+                            <p class="text-[11px] text-slate-400">Срок: ${g.deadline} (${daysText})</p>
+                        </div>
+                        <button onclick="deleteGoal(${g.id})" class="text-slate-500 hover:text-rose-400 p-1 transition">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="font-bold text-slate-200">${g.current.toLocaleString('ru-RU')} ₽</span>
+                            <span class="text-slate-400">из ${g.target.toLocaleString('ru-RU')} ₽ (${percent}%)</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700">
+                            <div class="bg-gradient-to-r from-purple-500 to-indigo-500 h-2.5 rounded-full transition-all duration-500" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-700/60 text-xs">
+                        <span class="text-slate-400">Осталось собрать: <b class="text-slate-200">${remaining.toLocaleString('ru-RU')} ₽</b></span>
+                        <div class="flex space-x-1.5">
+                            <button onclick="openGoalModal(${g.id}, 'withdraw')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1 rounded-lg transition text-[11px]">Снять</button>
+                            <button onclick="openGoalModal(${g.id}, 'deposit')" class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1 rounded-lg transition text-[11px] font-medium">+ Пополнить</button>
+                        </div>
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        // Analytics & Charts rendering with Chart.js
+        function renderCharts() {
+            // Expense by category calculation
+            const expCats = {};
+            categories.expense.forEach(c => expCats[c.id] = { name: c.name, total: 0, color: c.color });
+
+            let totalExpenseSum = 0;
+            transactions.forEach(t => {
+                if (t.type === 'expense') {
+                    if (!expCats[t.category]) {
+                        expCats[t.category] = { name: 'Прочее', total: 0, color: '#64748b' };
+                    }
+                    expCats[t.category].total += t.amount;
+                    totalExpenseSum += t.amount;
+                }
+            });
+
+            // Update stats cards
+            const daysCount = 30; // approx
+            const avgDaily = totalExpenseSum > 0 ? (totalExpenseSum / daysCount) : 0;
+            document.getElementById('statAvgDaily').textContent = avgDaily.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' });
+
+            let topCatName = 'Нет данных';
+            let maxCatVal = -1;
+            Object.values(expCats).forEach(c => {
+                if (c.total > maxCatVal) {
+                    maxCatVal = c.total;
+                    topCatName = c.name;
+                }
+            });
+            document.getElementById('statTopCategory').textContent = topCatName;
+
+            // 1. Pie Chart: Expenses by Category
+            const activeExpCats = Object.values(expCats).filter(c => c.total > 0);
+            const pieCtx = document.getElementById('expenseChart').getContext('2d');
+            
+            if (expenseChartInstance) expenseChartInstance.destroy();
+
+            if (activeExpCats.length === 0) {
+                // Draw empty state notice or empty chart
+                expenseChartInstance = new Chart(pieCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Нет расходов'],
+                        datasets: [{ data: [1], backgroundColor: ['#334155'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
+                });
+            } else {
+                expenseChartInstance = new Chart(pieCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: activeExpCats.map(c => c.name),
+                        datasets: [{
+                            data: activeExpCats.map(c => c.total),
+                            backgroundColor: activeExpCats.map(c => c.color),
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: '#cbd5e1', font: { size: 11 }, boxWidth: 12 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. Line Chart: Dynamics over time (last 7 days grouped)
+            const dynamicsCtx = document.getElementById('dynamicsChart').getContext('2d');
+            if (dynamicsChartInstance) dynamicsChartInstance.destroy();
+
+            // Group transactions by date for last 7 days
+            const last7Days = [];
+            const incomeData = [];
+            const expenseData = [];
+
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                last7Days.push(dateStr.split('-').reverse().slice(0, 2).join('.'));
+
+                let dayInc = 0;
+                let dayExp = 0;
+                transactions.forEach(t => {
+                    if (t.date === dateStr) {
+                        if (t.type === 'income') dayInc += t.amount;
+                        else dayExp += t.amount;
+                    }
+                });
+                incomeData.push(dayInc);
+                expenseData.push(dayExp);
+            }
+
+            dynamicsChartInstance = new Chart(dynamicsCtx, {
+                type: 'bar',
+                data: {
+                    labels: last7Days,
+                    datasets: [
+                        {
+                            label: 'Доходы',
+                            data: incomeData,
+                            backgroundColor: '#10b981',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Расходы',
+                            data: expenseData,
+                            backgroundColor: '#f43f5e',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#334155' } }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#cbd5e1', font: { size: 11 }, boxWidth: 12 }
+                        }
+                    }
+                }
+            });
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Install guide modal functions
+        function openInstallGuide() {
+            document.getElementById('installModal').classList.remove('hidden');
+        }
+        function closeInstallGuide() {
+            document.getElementById('installModal').classList.add('hidden');
+        }
+
+        // PWA prompt handler
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
